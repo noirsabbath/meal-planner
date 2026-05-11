@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#8b5e2a">
+  <title>Eggetarian Meal Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:        oklch(97.5% 0.008 80);
+      --surface:   oklch(99.5% 0.003 80);
+      --border:    oklch(91% 0.007 80);
+      --text:      oklch(20% 0.012 80);
+      --t2:        oklch(48% 0.010 80);
+      --t3:        oklch(66% 0.008 80);
+      --acc:       oklch(56% 0.17  57);
+      --acc-fg:    oklch(98% 0.006 80);
+      --acc-sub:   oklch(96% 0.05  78);
+      --grn:       oklch(50% 0.15 155);
+      --grn-sub:   oklch(96% 0.04 150);
+      --egg:       oklch(58% 0.13  78);
+      --egg-sub:   oklch(96% 0.06  85);
+      --yt:        oklch(49% 0.22  24);
+      --yt-sub:    oklch(97% 0.01  24);
+      --yt-bd:     oklch(90% 0.04  24);
+      --wa:        oklch(54% 0.17 152);
+      --wa-fg:     oklch(98% 0.006 152);
+      --wa-sub:    oklch(97% 0.01 152);
+      --wa-bd:     oklch(90% 0.04 152);
+      --radius:    10px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    }
+    .app { max-width: 480px; margin: 0 auto; }
+
+    /* ── Header ── */
+    .hd {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 20px 12px;
+      position: sticky; top: 0; z-index: 20;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .hd-left h1 { font-size: 16px; font-weight: 800; letter-spacing: -.3px; }
+    .hd-left h1 em { font-style: normal; color: var(--acc); }
+    .hd-left p { font-size: 9.5px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; color: var(--t3); margin-top: 2px; }
+    .hd-tabs { display: flex; gap: 4px; }
+    .hd-tab {
+      height: 30px; padding: 0 11px;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: none; font-family: inherit; font-size: 12px;
+      font-weight: 600; color: var(--t2); cursor: pointer;
+      transition: background .1s, color .1s, border-color .1s;
+    }
+    .hd-tab.on { background: var(--acc); color: var(--acc-fg); border-color: var(--acc); }
+
+    /* ── Controls ── */
+    .ctrl {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex; gap: 8px; align-items: center;
+    }
+    .date-in {
+      flex: 1; height: 42px; padding: 0 11px;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      font-family: inherit; font-size: 14px; color: var(--text);
+      background: var(--bg); outline: none;
+      -webkit-appearance: none; appearance: none; min-width: 0;
+    }
+    .date-in:focus { border-color: var(--acc); background: var(--surface); }
+    .btn-gen {
+      height: 42px; padding: 0 16px;
+      background: var(--acc); color: var(--acc-fg);
+      border: none; border-radius: var(--radius);
+      font-family: inherit; font-size: 13px; font-weight: 700;
+      cursor: pointer; white-space: nowrap; flex-shrink: 0;
+      transition: opacity .15s;
+    }
+    .btn-gen:active { opacity: .82; }
+    .btn-gen.grn { background: var(--grn); }
+
+    /* ── Empty ── */
+    .empty { padding: 64px 32px; text-align: center; }
+    .empty-ico { font-size: 36px; margin-bottom: 14px; opacity: .65; }
+    .empty h2 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+    .empty p { font-size: 13px; color: var(--t3); line-height: 1.65; max-width: 260px; margin: 0 auto; }
+
+    /* ── Day summary ── */
+    .day-bar {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+    }
+    .day-bar-date { font-size: 12px; font-weight: 600; color: var(--t2); line-height: 1.4; }
+    .day-bar-nums { font-size: 11px; color: var(--t3); text-align: right; flex-shrink: 0; }
+    .day-prot { font-size: 18px; font-weight: 800; color: var(--acc); font-variant-numeric: tabular-nums; letter-spacing: -.4px; line-height: 1; }
+
+    /* ── Meal blocks ── */
+    .meal-block {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 18px 20px 16px;
+    }
+    .meal-block.snack { background: var(--bg); padding-top: 14px; padding-bottom: 12px; }
+
+    .meal-lbl-row { display: flex; align-items: center; gap: 5px; margin-bottom: 9px; }
+    .m-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .m-dot.veg  { background: var(--grn); }
+    .m-dot.egg  { background: var(--egg); }
+    .m-type { font-size: 9.5px; font-weight: 700; letter-spacing: .7px; text-transform: uppercase; color: var(--t3); }
+    .m-time { font-size: 9.5px; color: var(--t3); margin-left: auto; }
+
+    .m-entry { position: relative; }
+    .m-name {
+      font-size: 15px; font-weight: 700; color: var(--text);
+      line-height: 1.3; margin-bottom: 2px; padding-right: 68px;
+    }
+    .meal-block.snack .m-name { font-size: 13px; font-weight: 600; padding-right: 60px; }
+
+    .m-prot { position: absolute; top: 0; right: 0; text-align: right; }
+    .p-num {
+      display: block; font-size: 19px; font-weight: 800; color: var(--acc);
+      font-variant-numeric: tabular-nums; letter-spacing: -.4px; line-height: 1;
+    }
+    .meal-block.snack .p-num { font-size: 15px; }
+    .p-lbl {
+      display: block; font-size: 8.5px; font-weight: 600; color: var(--t3);
+      letter-spacing: .3px; text-transform: uppercase; margin-top: 1px;
+    }
+
+    .m-kcal { font-size: 11px; color: var(--t3); margin-bottom: 7px; }
+    .m-ing  { font-size: 12px; color: var(--t2); line-height: 1.55; margin-bottom: 12px; }
+    .meal-block.snack .m-ing { font-size: 11.5px; margin-bottom: 9px; }
+
+    .m-acts { display: flex; gap: 6px; align-items: center; }
+
+    .btn-yt {
+      display: inline-flex; align-items: center; gap: 5px;
+      height: 34px; padding: 0 11px;
+      background: var(--yt-sub); color: var(--yt);
+      border: 1px solid var(--yt-bd); border-radius: 6px;
+      font-family: inherit; font-size: 11.5px; font-weight: 700;
+      cursor: pointer; text-decoration: none; white-space: nowrap;
+      transition: background .1s;
+    }
+    .btn-yt:active { background: oklch(93% 0.025 24); }
+
+    .btn-chg {
+      display: inline-flex; align-items: center; gap: 4px;
+      height: 34px; padding: 0 10px;
+      background: none; color: var(--t3);
+      border: 1px solid var(--border); border-radius: 6px;
+      font-family: inherit; font-size: 11.5px; font-weight: 600;
+      cursor: pointer; transition: color .1s;
+    }
+    .btn-chg:active { color: var(--t2); }
+
+    .btn-sh-meal {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 34px; height: 34px;
+      background: var(--wa-sub); color: var(--wa);
+      border: 1px solid var(--wa-bd); border-radius: 6px;
+      cursor: pointer; margin-left: auto; flex-shrink: 0;
+      transition: background .1s;
+    }
+    .btn-sh-meal:active { background: oklch(93% 0.03 152); }
+    .wa-ico { display: block; width: 15px; height: 15px; }
+
+    /* ── Sticky bottom ── */
+    .btmbar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      padding: 9px 20px calc(9px + env(safe-area-inset-bottom, 0px));
+      background: var(--surface); border-top: 1px solid var(--border);
+      z-index: 30;
+    }
+    @media (min-width: 480px) {
+      .btmbar { left: 50%; transform: translateX(-50%); width: 480px; }
+    }
+    .btn-sh-day {
+      display: flex; align-items: center; justify-content: center; gap: 9px;
+      width: 100%; height: 48px;
+      background: var(--wa); color: var(--wa-fg);
+      border: none; border-radius: 9px;
+      font-family: inherit; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: opacity .15s;
+    }
+    .btn-sh-day:active { opacity: .85; }
+
+    /* ── Weekly view ── */
+    .wk-hd { padding: 14px 20px; background: var(--surface); border-bottom: 1px solid var(--border); }
+    .wk-kicker { font-size: 9.5px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--t3); margin-bottom: 2px; }
+    .wk-range { font-size: 14px; font-weight: 700; color: var(--text); }
+
+    .wk-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 13px 20px; border-bottom: 1px solid var(--border);
+      background: var(--surface); cursor: pointer; transition: background .1s;
+    }
+    .wk-row:active { background: var(--bg); }
+    .wk-day { width: 38px; flex-shrink: 0; }
+    .wk-dname { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; color: var(--text); }
+    .wk-ddate { font-size: 10px; color: var(--t3); }
+    .wk-meals { flex: 1; font-size: 11px; color: var(--t2); line-height: 1.55; min-width: 0; overflow: hidden; }
+    .wk-meal-l { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .wk-prot { flex-shrink: 0; text-align: right; }
+    .wk-pval { display: block; font-size: 15px; font-weight: 800; color: var(--acc); font-variant-numeric: tabular-nums; letter-spacing: -.4px; line-height: 1; }
+    .wk-punit { font-size: 8.5px; font-weight: 600; text-transform: uppercase; color: var(--t3); letter-spacing: .3px; }
+    .wk-arr { color: var(--t3); font-size: 11px; flex-shrink: 0; }
+    .wk-wa { padding: 20px; }
+    .btn-sh-wk {
+      display: flex; align-items: center; justify-content: center; gap: 9px;
+      width: 100%; height: 48px;
+      background: var(--wa); color: var(--wa-fg);
+      border: none; border-radius: 9px;
+      font-family: inherit; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: opacity .15s;
+    }
+    .btn-sh-wk:active { opacity: .85; }
+
+    /* ── Recipe browser ── */
+    .br-ctrl {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 10px 20px; display: flex; flex-direction: column; gap: 8px;
+    }
+    .br-top-row { display: flex; gap: 8px; }
+    .br-search {
+      flex: 1; height: 40px; padding: 0 11px;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      font-family: inherit; font-size: 13px; color: var(--text);
+      background: var(--bg); outline: none; min-width: 0;
+    }
+    .br-search:focus { border-color: var(--acc); background: var(--surface); }
+    .btn-add-recipe {
+      height: 40px; padding: 0 14px; flex-shrink: 0;
+      background: var(--acc); color: var(--acc-fg);
+      border: none; border-radius: var(--radius);
+      font-family: inherit; font-size: 13px; font-weight: 700;
+      cursor: pointer; white-space: nowrap;
+      display: flex; align-items: center; gap: 5px;
+      transition: opacity .15s;
+    }
+    .btn-add-recipe:active { opacity: .82; }
+    .br-tabs { display: flex; gap: 5px; flex-wrap: wrap; }
+    .br-tab {
+      height: 30px; padding: 0 11px;
+      border: 1px solid var(--border); border-radius: 6px;
+      background: none; font-family: inherit; font-size: 11px;
+      font-weight: 600; color: var(--t2); cursor: pointer;
+      transition: background .1s, color .1s;
+    }
+    .br-tab.on { background: var(--acc); color: var(--acc-fg); border-color: var(--acc); }
+    .br-cnt { padding: 10px 20px 2px; font-size: 11px; color: var(--t3); font-weight: 600; }
+    .br-grid { padding: 0 20px 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .br-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 11px;
+      position: relative;
+    }
+    .br-card.custom-card { border-color: var(--acc-sub); }
+    .br-name { font-size: 12px; font-weight: 600; color: var(--text); line-height: 1.4; margin-bottom: 4px; padding-right: 20px; }
+    .br-prot { font-size: 10px; color: var(--acc); font-weight: 700; margin-bottom: 4px; font-variant-numeric: tabular-nums; }
+    .br-tags { display: flex; gap: 3px; flex-wrap: wrap; margin-bottom: 6px; }
+    .br-tag { font-size: 9.5px; padding: 1px 5px; border-radius: 99px; font-weight: 500; }
+    .tag-e { background: var(--egg-sub); color: var(--egg); }
+    .tag-v { background: var(--grn-sub); color: var(--grn); }
+    .tag-p { background: var(--acc-sub); color: var(--acc); }
+    .tag-q { background: oklch(96% 0.04 250); color: oklch(45% 0.14 250); }
+    .tag-mine { background: oklch(96% 0.04 300); color: oklch(45% 0.12 300); }
+    .br-yt {
+      display: inline-flex; align-items: center; gap: 3px;
+      font-size: 10px; font-weight: 600; color: var(--yt);
+      background: var(--yt-sub); border: 1px solid var(--yt-bd);
+      border-radius: 4px; padding: 2px 6px; text-decoration: none;
+      transition: background .1s;
+    }
+    .br-del {
+      position: absolute; top: 8px; right: 8px;
+      width: 18px; height: 18px; border-radius: 4px;
+      background: none; border: none; cursor: pointer;
+      color: var(--t3); font-size: 13px; display: flex;
+      align-items: center; justify-content: center;
+      transition: color .1s, background .1s;
+    }
+    .br-del:hover { color: var(--yt); background: var(--yt-sub); }
+
+    /* ── Add recipe panel ── */
+    .overlay {
+      position: fixed; inset: 0;
+      background: oklch(20% 0.012 80 / 0.5);
+      z-index: 40; opacity: 0; pointer-events: none;
+      transition: opacity .22s;
+    }
+    .overlay.open { opacity: 1; pointer-events: auto; }
+
+    .add-panel {
+      position: fixed; left: 0; right: 0; bottom: 0;
+      max-width: 480px; margin: 0 auto;
+      background: var(--surface);
+      border-radius: 16px 16px 0 0;
+      padding: 0;
+      z-index: 50;
+      transform: translateY(100%);
+      transition: transform .3s cubic-bezier(0.16, 1, 0.3, 1);
+      max-height: 92dvh;
+      display: flex; flex-direction: column;
+    }
+    .add-panel.open { transform: translateY(0); }
+    @media (min-width: 480px) {
+      .add-panel { left: 50%; transform: translateX(-50%) translateY(100%); width: 480px; }
+      .add-panel.open { transform: translateX(-50%) translateY(0); }
+    }
+
+    .panel-drag { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 10px auto 0; flex-shrink: 0; }
+    .panel-hd {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 20px 12px; border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .panel-title { font-size: 15px; font-weight: 800; }
+    .panel-close {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--bg); border: 1px solid var(--border);
+      cursor: pointer; font-size: 14px; color: var(--t2);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .panel-body {
+      overflow-y: auto; padding: 16px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+      flex: 1;
+    }
+
+    /* form */
+    .f-field { margin-bottom: 14px; }
+    .f-label {
+      display: block; font-size: 10px; font-weight: 700;
+      letter-spacing: .5px; text-transform: uppercase;
+      color: var(--t3); margin-bottom: 5px;
+    }
+    .f-input {
+      width: 100%; height: 42px; padding: 0 11px;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      font-family: inherit; font-size: 14px; color: var(--text);
+      background: var(--bg); outline: none;
+    }
+    .f-input:focus { border-color: var(--acc); background: var(--surface); }
+
+    .f-select {
+      width: 100%; height: 42px; padding: 0 30px 0 11px;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      font-family: inherit; font-size: 14px; color: var(--text);
+      background: var(--bg); outline: none;
+      -webkit-appearance: none; appearance: none;
+      background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2.2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+    }
+    .f-select:focus { border-color: var(--acc); background-color: var(--surface); }
+
+    .f-textarea {
+      width: 100%; min-height: 72px; padding: 10px 11px;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      font-family: inherit; font-size: 13px; color: var(--text);
+      background: var(--bg); outline: none; resize: none;
+    }
+    .f-textarea:focus { border-color: var(--acc); background: var(--surface); }
+
+    .f-row { display: flex; gap: 10px; }
+    .f-row .f-field { flex: 1; }
+
+    .f-hint { font-size: 10.5px; color: var(--t3); margin-top: 4px; }
+
+    .yt-search-btn {
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      width: 100%; height: 42px;
+      background: var(--yt-sub); color: var(--yt);
+      border: 1px solid var(--yt-bd); border-radius: var(--radius);
+      font-family: inherit; font-size: 13px; font-weight: 700;
+      cursor: pointer; transition: background .1s;
+    }
+    .yt-search-btn:active { background: oklch(93% 0.025 24); }
+
+    .type-row { display: flex; gap: 8px; }
+    .type-btn {
+      flex: 1; height: 40px;
+      border: 1px solid var(--border); border-radius: var(--radius);
+      background: none; font-family: inherit; font-size: 12.5px; font-weight: 600;
+      color: var(--t2); cursor: pointer; transition: all .1s;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+    }
+    .type-btn.sel-veg { background: var(--grn-sub); color: var(--grn); border-color: var(--grn); }
+    .type-btn.sel-egg { background: var(--egg-sub); color: var(--egg); border-color: var(--egg); }
+
+    .btn-save {
+      width: 100%; height: 48px;
+      background: var(--acc); color: var(--acc-fg);
+      border: none; border-radius: var(--radius);
+      font-family: inherit; font-size: 15px; font-weight: 700;
+      cursor: pointer; margin-top: 8px; transition: opacity .15s;
+    }
+    .btn-save:active { opacity: .85; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed;
+      bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+      left: 50%; transform: translateX(-50%) translateY(10px);
+      background: oklch(22% 0.01 80); color: oklch(97% 0.005 80);
+      padding: 9px 18px; border-radius: 8px;
+      font-size: 13px; font-weight: 600;
+      opacity: 0; transition: opacity .2s, transform .2s;
+      z-index: 70; white-space: nowrap; pointer-events: none;
+      max-width: calc(100vw - 40px); text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Loading ── */
+    .loading { padding: 60px 20px; text-align: center; }
+    .ld-dots { display: inline-flex; gap: 5px; }
+    .ld-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--acc);
+      animation: pulse 1.1s ease-in-out infinite;
+    }
+    .ld-dot:nth-child(2) { animation-delay: .18s; }
+    .ld-dot:nth-child(3) { animation-delay: .36s; }
+    @keyframes pulse {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:.25; transform:scale(.7); }
+    }
+    .ld-lbl { font-size: 12px; color: var(--t3); margin-top: 12px; }
+
+    @keyframes fu { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+    .ai  { animation: fu .22s ease-out both; }
+    .d1  { animation-delay: .03s; }
+    .d2  { animation-delay: .07s; }
+    .d3  { animation-delay: .11s; }
+    .d4  { animation-delay: .15s; }
+    .d5  { animation-delay: .19s; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <!-- Header -->
+  <header class="hd">
+    <div class="hd-left">
+      <h1>Meal<em>Planner</em></h1>
+      <p>Protein-Rich · Eggetarian · Indian</p>
+    </div>
+    <div class="hd-tabs">
+      <button class="hd-tab on" id="tab-plan"   onclick="switchTab('plan')">Plan</button>
+      <button class="hd-tab"    id="tab-browse" onclick="switchTab('browse')">Browse</button>
+    </div>
+  </header>
+
+  <!-- Plan controls -->
+  <div class="ctrl" id="plan-ctrl">
+    <input type="date" id="mealDate" class="date-in" />
+    <button class="btn-gen"     onclick="triggerDay()">Generate</button>
+    <button class="btn-gen grn" onclick="triggerWeekly()">7-Day</button>
+  </div>
+
+  <!-- Browse controls -->
+  <div id="browse-ctrl" style="display:none">
+    <div class="br-ctrl">
+      <div class="br-top-row">
+        <input type="text" id="br-search" class="br-search" placeholder="Search recipes…" oninput="renderBrowser()">
+        <button class="btn-add-recipe" onclick="openPanel()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Add Recipe
+        </button>
+      </div>
+      <div class="br-tabs">
+        <button class="br-tab on" onclick="setFilter('all',this)">All</button>
+        <button class="br-tab" onclick="setFilter('b',this)">Breakfast</button>
+        <button class="br-tab" onclick="setFilter('l',this)">Lunch</button>
+        <button class="br-tab" onclick="setFilter('d',this)">Dinner</button>
+        <button class="br-tab" onclick="setFilter('e',this)">Egg</button>
+        <button class="br-tab" onclick="setFilter('p',this)">High protein</button>
+        <button class="br-tab" onclick="setFilter('v',this)">Pure veg</button>
+        <button class="br-tab" onclick="setFilter('mine',this)">Mine</button>
+      </div>
+    </div>
+    <div class="br-cnt" id="br-cnt"></div>
+    <div class="br-grid" id="br-grid"></div>
+  </div>
+
+  <!-- Plan output -->
+  <main id="planOut">
+    <div class="empty">
+      <div class="empty-ico">🥚</div>
+      <h2>Plan today's meals</h2>
+      <p>Pick a date, tap Generate. Each meal links to a YouTube recipe you can share with ingredients to your WhatsApp group.</p>
+    </div>
+  </main>
+
+  <!-- Sticky bottom bar -->
+  <div class="btmbar" id="btmBar" style="display:none">
+    <button class="btn-sh-day" onclick="shareDayWA()">
+      <svg class="wa-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      Share Full Day to WhatsApp
+    </button>
+  </div>
+</div><!-- /app -->
+
+<!-- Overlay -->
+<div class="overlay" id="overlay" onclick="closePanel()"></div>
+
+<!-- Add Recipe Panel -->
+<div class="add-panel" id="addPanel">
+  <div class="panel-drag"></div>
+  <div class="panel-hd">
+    <div class="panel-title">Add Your Recipe</div>
+    <button class="panel-close" onclick="closePanel()">✕</button>
+  </div>
+  <div class="panel-body">
+
+    <div class="f-field">
+      <label class="f-label" for="f-name">Recipe Name *</label>
+      <input type="text" id="f-name" class="f-input" placeholder="e.g. Masala Tofu Scramble">
+    </div>
+
+    <div class="f-field">
+      <label class="f-label" for="f-type">Meal Slot *</label>
+      <select id="f-type" class="f-select">
+        <option value="breakfast">Breakfast</option>
+        <option value="midMorning">Mid-Morning Snack</option>
+        <option value="lunch" selected>Lunch</option>
+        <option value="eveningSnack">Evening Snack</option>
+        <option value="dinner">Dinner</option>
+      </select>
+    </div>
+
+    <div class="f-field">
+      <label class="f-label">Find Recipe on YouTube</label>
+      <button class="yt-search-btn" onclick="openYTSearch()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+        Open YouTube Search
+      </button>
+      <p class="f-hint">Tap to search YouTube. Find your recipe, copy the video URL, paste below.</p>
+    </div>
+
+    <div class="f-field">
+      <label class="f-label" for="f-yturl">YouTube Video URL (paste here)</label>
+      <input type="url" id="f-yturl" class="f-input" placeholder="https://youtube.com/watch?v=…">
+    </div>
+
+    <div class="f-row">
+      <div class="f-field">
+        <label class="f-label" for="f-prot">Protein (g) *</label>
+        <input type="number" id="f-prot" class="f-input" placeholder="20" min="0" max="150">
+      </div>
+      <div class="f-field">
+        <label class="f-label" for="f-cal">Calories (kcal) *</label>
+        <input type="number" id="f-cal" class="f-input" placeholder="350" min="0" max="2000">
+      </div>
+    </div>
+
+    <div class="f-field">
+      <label class="f-label" for="f-ing">Ingredients (comma separated)</label>
+      <textarea id="f-ing" class="f-textarea" placeholder="paneer 100g, onion, tomato, green chilli, spices"></textarea>
+    </div>
+
+    <div class="f-field">
+      <label class="f-label">Type</label>
+      <div class="type-row">
+        <button class="type-btn sel-veg" id="type-veg" onclick="setEggType(false)">
+          <span style="color:var(--grn)">●</span> Veg
+        </button>
+        <button class="type-btn" id="type-egg" onclick="setEggType(true)">
+          🥚 Egg-Based
+        </button>
+      </div>
+    </div>
+
+    <button class="btn-save" onclick="saveRecipe()">Save Recipe</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================================================================
+   MEAL DATABASE — 76 dishes across 5 meal slots
+   { name, protein(g), cal(kcal), isEgg, ing[], ytQ, tags[] }
+   tags: 'p'=high-protein(≥20g), 'q'=quick, 'h'=heavy, 'i'=global
+   ================================================================ */
+const DB = {
+  breakfast: [
+    { name:"Egg Bhurji with Multigrain Toast",           protein:22, cal:340, isEgg:true,
+      ing:["3 eggs","onion","tomato","green chilli","cumin","multigrain toast 2 slices"],
+      ytQ:"egg bhurji recipe healthy Indian breakfast", tags:["p","q"] },
+    { name:"Masala Omelette (3 Eggs)",                   protein:20, cal:265, isEgg:true,
+      ing:["3 eggs","onion","tomato","green chilli","coriander","black pepper"],
+      ytQ:"masala omelette 3 eggs Indian breakfast recipe", tags:["q"] },
+    { name:"Moong Dal Chilla with Paneer Stuffing",      protein:22, cal:295, isEgg:false,
+      ing:["moong dal 80g","paneer 80g","ginger","green chilli","cumin","coriander"],
+      ytQ:"moong dal chilla paneer stuffing recipe protein", tags:["p"] },
+    { name:"Paneer Paratha with Greek Yogurt",           protein:24, cal:375, isEgg:false,
+      ing:["whole wheat flour 100g","paneer 100g","green chilli","coriander","Greek yogurt 150g"],
+      ytQ:"paneer paratha Greek yogurt high protein breakfast", tags:["p","h"] },
+    { name:"Egg Dosa with Sambar",                       protein:20, cal:285, isEgg:true,
+      ing:["dosa batter 150g","2 eggs","onion","green chilli","sambar","coconut chutney"],
+      ytQ:"egg dosa South Indian protein breakfast recipe", tags:[] },
+    { name:"Sattu Porridge with Mixed Nuts",             protein:18, cal:320, isEgg:false,
+      ing:["sattu flour 80g","almonds 10","walnuts 5","milk 200ml","dates 3","jaggery 1 tsp"],
+      ytQ:"sattu porridge recipe protein Indian breakfast", tags:["q"] },
+    { name:"Besan Chilla with Curd",                     protein:16, cal:250, isEgg:false,
+      ing:["besan 80g","onion","tomato","spinach","green chilli","curd 150g","cumin"],
+      ytQ:"besan chilla curd healthy protein breakfast", tags:["q"] },
+    { name:"Sprouted Moong with Boiled Eggs",            protein:22, cal:242, isEgg:true,
+      ing:["sprouted moong 100g","2 boiled eggs","chaat masala","lemon","coriander","onion"],
+      ytQ:"sprouted moong boiled eggs protein Indian breakfast", tags:["p","q"] },
+    { name:"Tofu Scramble with Veggies",                 protein:20, cal:232, isEgg:false,
+      ing:["firm tofu 200g","bell peppers","onion","turmeric","black salt","spinach","coriander"],
+      ytQ:"tofu scramble Indian style protein breakfast", tags:["q"] },
+    { name:"Quinoa Upma",                                protein:14, cal:272, isEgg:false,
+      ing:["quinoa 80g","mixed vegetables","mustard seeds","curry leaves","onion","ginger"],
+      ytQ:"quinoa upma recipe healthy Indian breakfast", tags:["q"] },
+    { name:"Egg Uttapam with Coconut Chutney",           protein:18, cal:260, isEgg:true,
+      ing:["dosa batter 150g","2 eggs","onion","tomato","capsicum","coconut chutney"],
+      ytQ:"egg uttapam recipe South Indian breakfast", tags:[] },
+    { name:"Soya Milk Banana Smoothie",                  protein:16, cal:282, isEgg:false,
+      ing:["soya milk 300ml","banana 1","almond butter 1 tbsp","chia seeds 1 tsp","cinnamon"],
+      ytQ:"soya milk banana protein smoothie breakfast", tags:["q"] },
+    { name:"Grilled Paneer Sandwich",                    protein:22, cal:338, isEgg:false,
+      ing:["multigrain bread 2 slices","paneer 100g","capsicum","onion","green chutney","spices"],
+      ytQ:"grilled paneer sandwich protein breakfast recipe", tags:["q","p"] },
+    { name:"Dal Dosa with Sambar",                       protein:14, cal:252, isEgg:false,
+      ing:["urad dal","chana dal","rice","fenugreek seeds","sambar","chutneys"],
+      ytQ:"dal dosa sambar protein South Indian breakfast", tags:["h"] },
+    { name:"Egg Poha",                                   protein:18, cal:292, isEgg:true,
+      ing:["thick poha 80g","2 eggs","onion","green peas","peanuts","mustard seeds","turmeric","curry leaves"],
+      ytQ:"egg poha recipe protein Indian breakfast", tags:["q"] },
+    { name:"Greek Yogurt Parfait with Seeds",            protein:20, cal:272, isEgg:false,
+      ing:["Greek yogurt 200g","granola 30g","chia seeds 1 tbsp","flaxseeds 1 tsp","mixed berries","honey"],
+      ytQ:"Greek yogurt parfait chia seeds protein breakfast", tags:["q"] },
+  ],
+
+  midMorning: [
+    { name:"Sprouted Moong Chaat",                       protein:12, cal:142, isEgg:false,
+      ing:["sprouted moong 100g","cucumber","tomato","onion","chaat masala","lemon","coriander"],
+      ytQ:"sprouted moong chaat recipe protein snack Indian", tags:["q"] },
+    { name:"Roasted Masala Chickpeas",                   protein:10, cal:172, isEgg:false,
+      ing:["chickpeas 100g","olive oil 1 tsp","chaat masala","cumin","paprika","salt"],
+      ytQ:"roasted masala chickpeas healthy snack recipe", tags:["q"] },
+    { name:"Boiled Eggs with Black Salt",                protein:12, cal:136, isEgg:true,
+      ing:["2 boiled eggs","black salt","chaat masala","black pepper","lemon wedge"],
+      ytQ:"boiled eggs black salt chaat masala protein snack", tags:["q"] },
+    { name:"Raw Paneer Cubes with Pepper",               protein:14, cal:152, isEgg:false,
+      ing:["raw paneer 100g","black pepper","pink salt","lemon juice","mint leaves"],
+      ytQ:"raw paneer cubes healthy protein snack", tags:["q"] },
+    { name:"Peanut Butter on Multigrain Toast",          protein:12, cal:192, isEgg:false,
+      ing:["multigrain bread 2 slices","natural peanut butter 2 tbsp","banana slices"],
+      ytQ:"peanut butter multigrain toast protein snack", tags:["q"] },
+    { name:"Edamame Chaat",                              protein:14, cal:155, isEgg:false,
+      ing:["shelled edamame 150g","chaat masala","lime juice","coriander leaves","red chilli flakes"],
+      ytQ:"edamame chaat Indian protein snack recipe", tags:["q"] },
+    { name:"Curd with Flaxseeds & Walnuts",             protein:10, cal:145, isEgg:false,
+      ing:["full-fat curd 200g","flaxseeds 1 tbsp","walnuts 5","almonds 5","honey 1 tsp"],
+      ytQ:"curd flaxseeds walnuts protein healthy snack", tags:["q"] },
+    { name:"Roasted Soya Nuts",                          protein:14, cal:162, isEgg:false,
+      ing:["soya nuts 50g","chaat masala","salt","cumin powder"],
+      ytQ:"roasted soya nuts recipe protein Indian snack", tags:["q"] },
+    { name:"Rajma Hummus with Cucumber Sticks",          protein:10, cal:135, isEgg:false,
+      ing:["rajma cooked 80g","tahini 1 tbsp","garlic 1 clove","lemon","olive oil","cumin","cucumber sticks"],
+      ytQ:"rajma hummus recipe Indian protein snack", tags:["q"] },
+    { name:"Mixed Nuts & Seeds Trail Mix",               protein:8,  cal:212, isEgg:false,
+      ing:["almonds 15g","walnuts 15g","pumpkin seeds 10g","sunflower seeds 10g","cashews 10g"],
+      ytQ:"nuts seeds trail mix healthy protein snack", tags:["q"] },
+    { name:"Egg White Omelette with Spinach",            protein:14, cal:96,  isEgg:true,
+      ing:["4 egg whites","fresh spinach","mushroom","bell pepper","black pepper","herbs"],
+      ytQ:"egg white omelette spinach protein snack recipe", tags:["q"] },
+    { name:"Chana Chaat",                                protein:10, cal:162, isEgg:false,
+      ing:["boiled chana 100g","onion","tomato","cucumber","chaat masala","tamarind chutney","coriander"],
+      ytQ:"chana chaat recipe protein Indian snack", tags:["q"] },
+  ],
+
+  lunch: [
+    { name:"Rajma Chawal with Cucumber Raita",           protein:20, cal:478, isEgg:false,
+      ing:["rajma 150g","brown rice 80g","onion","tomato","spices","curd raita","coriander"],
+      ytQ:"rajma chawal dhaba style recipe protein Indian", tags:["h"] },
+    { name:"Dal Makhani with Brown Rice",                protein:18, cal:458, isEgg:false,
+      ing:["whole black lentil 120g","rajma 40g","butter 1 tbsp","cream 2 tbsp","tomato puree","spices","brown rice 80g"],
+      ytQ:"dal makhani restaurant style recipe protein", tags:["h"] },
+    { name:"Chana Masala with Roti",                     protein:20, cal:432, isEgg:false,
+      ing:["white chickpeas 150g","onion","tomato","ginger garlic paste","whole spices","whole wheat roti 2"],
+      ytQ:"chana masala dhaba style recipe protein", tags:["p"] },
+    { name:"Palak Paneer with Roti",                     protein:22, cal:442, isEgg:false,
+      ing:["paneer 150g","fresh spinach 250g","onion","tomato","cream 2 tbsp","spices","whole wheat roti 2"],
+      ytQ:"palak paneer restaurant style protein recipe", tags:["p"] },
+    { name:"Egg Curry with Steamed Rice",                protein:24, cal:472, isEgg:true,
+      ing:["4 boiled eggs","onion","tomato","coconut milk 100ml","spices","coriander","steamed rice 80g"],
+      ytQ:"egg curry South Indian protein recipe", tags:["p"] },
+    { name:"Soya Chunk Masala with Roti",                protein:26, cal:412, isEgg:false,
+      ing:["soya chunks 100g","onion","tomato","ginger garlic","spices","curd 50g","whole wheat roti 2"],
+      ytQ:"soya chunk curry high protein recipe Indian", tags:["p"] },
+    { name:"Sambar Rice with Papad",                     protein:14, cal:372, isEgg:false,
+      ing:["toor dal 80g","mixed vegetables","tamarind pulp","sambar powder","rice 80g","curry leaves","mustard seeds"],
+      ytQ:"sambar rice South Indian healthy protein recipe", tags:["h"] },
+    { name:"Paneer Tikka Masala with Roti",              protein:28, cal:512, isEgg:false,
+      ing:["paneer 200g","bell peppers","onion","tomato gravy","cream 3 tbsp","tandoori spices","whole wheat roti 2"],
+      ytQ:"paneer tikka masala restaurant style protein recipe", tags:["p","h"] },
+    { name:"Egg Biryani",                                protein:24, cal:512, isEgg:true,
+      ing:["4 eggs","basmati rice 100g","fried onion","yogurt 50g","biryani masala","saffron","mint","coriander"],
+      ytQ:"egg biryani restaurant style protein recipe", tags:["p","h"] },
+    { name:"Matar Paneer with Roti",                     protein:22, cal:438, isEgg:false,
+      ing:["paneer 150g","green peas 80g","onion","tomato","cream 2 tbsp","spices","whole wheat roti 2"],
+      ytQ:"matar paneer dhaba style protein recipe", tags:["h"] },
+    { name:"Tofu Butter Masala with Roti",               protein:20, cal:412, isEgg:false,
+      ing:["firm tofu 200g","tomato puree","butter 1 tbsp","cream 2 tbsp","spices","fenugreek leaves","roti 2"],
+      ytQ:"tofu butter masala recipe protein Indian", tags:[] },
+    { name:"Soya Keema Matar with Roti",                 protein:24, cal:422, isEgg:false,
+      ing:["soya granules 80g","green peas 60g","onion","tomato","ginger garlic paste","spices","whole wheat roti 2"],
+      ytQ:"soya keema matar recipe high protein Indian", tags:["p"] },
+    { name:"Chhole Bhature",                             protein:20, cal:552, isEgg:false,
+      ing:["white chickpeas 200g","onion","tomato","spices","bhatura dough","pickle","cold yogurt"],
+      ytQ:"chhole bhature restaurant style Indian recipe", tags:["h"] },
+    { name:"Paneer Bhurji Paratha",                      protein:26, cal:472, isEgg:false,
+      ing:["paneer 150g","onion","capsicum","tomato","spices","whole wheat paratha 2","curd 100g"],
+      ytQ:"paneer bhurji paratha recipe high protein Indian", tags:["p","h"] },
+    { name:"Mixed Dal with Brown Rice & Ghee",           protein:16, cal:412, isEgg:false,
+      ing:["toor dal 40g","moong dal 30g","masoor dal 30g","brown rice 80g","ghee 1 tsp","cumin tadka","onion"],
+      ytQ:"mixed dal recipe protein healthy Indian lunch", tags:["h"] },
+    { name:"Egg Saag (Eggs in Spinach Gravy)",           protein:22, cal:372, isEgg:true,
+      ing:["4 eggs","spinach 250g","onion","tomato","cream 2 tbsp","spices","whole wheat roti 2"],
+      ytQ:"egg saag spinach curry protein Indian recipe", tags:["p"] },
+    { name:"Kadala Curry with Appam",                    protein:18, cal:412, isEgg:false,
+      ing:["black chickpeas 150g","coconut milk 100ml","onion","tomato","Kerala spices","appam 3"],
+      ytQ:"kadala curry appam Kerala recipe protein", tags:["h"] },
+    { name:"Shakshuka (Indian Style) with Bread",        protein:20, cal:312, isEgg:true,
+      ing:["4 eggs","tomato puree 200g","bell peppers","onion","cumin","coriander","paneer crumbles 50g","multigrain bread 2 slices"],
+      ytQ:"Indian shakshuka recipe protein eggs healthy", tags:["q"] },
+    { name:"Paneer Khichdi",                             protein:20, cal:392, isEgg:false,
+      ing:["paneer 100g","moong dal 60g","rice 60g","ghee 1 tsp","cumin","turmeric","mixed vegetables","papad"],
+      ytQ:"paneer khichdi recipe healthy protein Indian", tags:["h"] },
+    { name:"Masoor Dal with Roti & Salad",               protein:16, cal:372, isEgg:false,
+      ing:["masoor dal 150g","onion","tomato","ginger garlic","spices","whole wheat roti 2","cucumber salad"],
+      ytQ:"masoor dal recipe protein healthy Indian", tags:[] },
+  ],
+
+  eveningSnack: [
+    { name:"Egg Kathi Roll",                             protein:18, cal:272, isEgg:true,
+      ing:["2 eggs","whole wheat paratha","onion","capsicum","mint chutney","chaat masala","lemon"],
+      ytQ:"egg kathi roll recipe healthy protein snack", tags:["q"] },
+    { name:"Besan Dhokla",                               protein:10, cal:155, isEgg:false,
+      ing:["besan 100g","curd 50g","ginger","green chilli","eno 1 tsp","mustard seeds","curry leaves","coconut"],
+      ytQ:"besan dhokla steamed healthy protein snack", tags:[] },
+    { name:"Mixed Sprout Tikki",                         protein:12, cal:175, isEgg:false,
+      ing:["mixed sprouts 100g","boiled potato","breadcrumbs 2 tbsp","spices","coriander","green chutney"],
+      ytQ:"sprouts tikki recipe healthy protein snack Indian", tags:[] },
+    { name:"Paneer Tikka (Snack Portion)",               protein:16, cal:192, isEgg:false,
+      ing:["paneer 100g","yogurt 2 tbsp","bell peppers","onion","tandoori masala","lemon","coriander"],
+      ytQ:"paneer tikka recipe healthy protein snack", tags:[] },
+    { name:"Boiled Egg Chaat",                           protein:12, cal:152, isEgg:true,
+      ing:["2 boiled eggs","onion","tomato","chaat masala","lemon","coriander","tamarind chutney"],
+      ytQ:"boiled egg chaat recipe protein Indian snack", tags:["q"] },
+    { name:"Mixed Sprouts Chaat",                        protein:12, cal:145, isEgg:false,
+      ing:["mixed sprouts 100g","pomegranate seeds","onion","cucumber","chaat masala","lemon","coriander"],
+      ytQ:"mixed sprouts chaat recipe protein healthy", tags:["q"] },
+    { name:"Roasted Makhana (Fox Nuts)",                 protein:8,  cal:135, isEgg:false,
+      ing:["makhana 50g","ghee 1 tsp","salt","black pepper","chaat masala"],
+      ytQ:"roasted makhana recipe healthy snack Indian", tags:["q"] },
+    { name:"Peanut Chaat",                               protein:14, cal:192, isEgg:false,
+      ing:["roasted peanuts 80g","onion","tomato","cucumber","coriander","chaat masala","lemon"],
+      ytQ:"peanut chaat recipe protein Indian snack", tags:["q"] },
+    { name:"Mini Egg Muffins",                           protein:16, cal:192, isEgg:true,
+      ing:["3 eggs","fresh spinach","mushroom","onion","cottage cheese 30g","mixed herbs","black pepper"],
+      ytQ:"Indian egg muffins recipe protein snack", tags:[] },
+    { name:"Tofu Tikka",                                 protein:16, cal:172, isEgg:false,
+      ing:["firm tofu 150g","yogurt 2 tbsp","tandoori spices","bell peppers","onion","mint chutney"],
+      ytQ:"tofu tikka recipe protein healthy snack Indian", tags:[] },
+    { name:"Rajma Tikki",                                protein:12, cal:195, isEgg:false,
+      ing:["cooked rajma 100g","boiled potato","onion","cumin","coriander","breadcrumbs","green chutney"],
+      ytQ:"rajma tikki recipe protein healthy snack", tags:[] },
+    { name:"Deviled Eggs Indian Style",                  protein:14, cal:175, isEgg:true,
+      ing:["4 boiled eggs","mayo 1 tbsp","mustard 1 tsp","chaat masala","red chilli","fresh coriander"],
+      ytQ:"Indian deviled eggs spicy protein snack recipe", tags:["q"] },
+  ],
+
+  dinner: [
+    { name:"Paneer Tikka Masala with Roti",              protein:28, cal:472, isEgg:false,
+      ing:["paneer 200g","tomato gravy","cream 3 tbsp","butter 1 tbsp","spices","fenugreek leaves","whole wheat roti 2"],
+      ytQ:"paneer tikka masala dinner restaurant style recipe", tags:["p"] },
+    { name:"Dal Tadka with Roti & Salad",                protein:16, cal:372, isEgg:false,
+      ing:["toor dal 150g","onion","tomato","ghee 1.5 tsp","cumin","garlic","red chilli","roti 2","cucumber salad"],
+      ytQ:"dal tadka dhaba style healthy dinner recipe", tags:["h"] },
+    { name:"Egg Curry with Roti",                        protein:22, cal:412, isEgg:true,
+      ing:["4 boiled eggs","onion masala","tomato","coconut milk 100ml","spices","coriander","whole wheat roti 2"],
+      ytQ:"egg curry restaurant style protein dinner recipe", tags:["p"] },
+    { name:"Palak Paneer with Roti",                     protein:24, cal:432, isEgg:false,
+      ing:["paneer 200g","fresh spinach 300g","onion","cream 2 tbsp","spices","whole wheat roti 2"],
+      ytQ:"palak paneer healthy dinner restaurant style", tags:["p"] },
+    { name:"Chana Masala with Roti",                     protein:18, cal:392, isEgg:false,
+      ing:["white chickpeas 200g","onion","tomato","ginger garlic paste","whole spices","roti 2","coriander"],
+      ytQ:"chana masala protein dinner recipe healthy", tags:[] },
+    { name:"Soya Chunks Masala with Roti",               protein:28, cal:392, isEgg:false,
+      ing:["soya chunks 100g","onion gravy","tomato","spices","curd 50g","whole wheat roti 2"],
+      ytQ:"soya chunks curry high protein dinner Indian", tags:["p"] },
+    { name:"Masoor Dal Soup with Multigrain Bread",      protein:16, cal:292, isEgg:false,
+      ing:["masoor dal 150g","spinach handful","onion","tomato","garlic 2 cloves","spices","multigrain bread 2 slices"],
+      ytQ:"masoor dal soup healthy protein light dinner", tags:["q"] },
+    { name:"Tofu & Veggie Stir Fry with Brown Rice",     protein:20, cal:372, isEgg:false,
+      ing:["firm tofu 200g","broccoli","bell peppers","onion","soy sauce 1 tbsp","ginger","garlic","brown rice 80g"],
+      ytQ:"tofu stir fry Indian protein healthy dinner", tags:["i"] },
+    { name:"Egg Bhurji with Paratha",                    protein:22, cal:412, isEgg:true,
+      ing:["4 eggs","onion","tomato","capsicum","green chilli","spices","whole wheat paratha 2"],
+      ytQ:"egg bhurji paratha protein dinner Indian recipe", tags:["q"] },
+    { name:"Rajma Soup with Multigrain Bread",           protein:18, cal:332, isEgg:false,
+      ing:["rajma 150g","onion","tomato","garlic 2 cloves","spices","cream 1 tbsp","multigrain bread 2 slices"],
+      ytQ:"rajma soup recipe healthy protein dinner", tags:[] },
+    { name:"Paneer Momos with Broth",                    protein:22, cal:352, isEgg:false,
+      ing:["paneer filling 150g","whole wheat momo wrapper","onion","ginger","coriander","veg broth 200ml"],
+      ytQ:"paneer momos recipe healthy protein dinner", tags:[] },
+    { name:"Egg Korma with Roti",                        protein:22, cal:432, isEgg:true,
+      ing:["4 eggs","cashew paste 2 tbsp","onion","yogurt 50g","aromatic spices","cream 2 tbsp","whole wheat roti 2"],
+      ytQ:"egg korma Mughlai style protein dinner recipe", tags:["h"] },
+    { name:"Shakshuka with Naan",                        protein:20, cal:392, isEgg:true,
+      ing:["4 eggs","tomatoes 300g","bell peppers","onion","cumin","spices","paneer crumbles 50g","naan 2"],
+      ytQ:"shakshuka recipe healthy protein eggs dinner", tags:["q"] },
+    { name:"Moong Dal Khichdi with Ghee",                protein:16, cal:352, isEgg:false,
+      ing:["moong dal 100g","rice 80g","ghee 1.5 tsp","cumin","turmeric","ginger","mixed vegetables","papad"],
+      ytQ:"moong dal khichdi recipe healthy protein dinner", tags:["h"] },
+    { name:"Paneer Butter Masala with Roti",             protein:26, cal:492, isEgg:false,
+      ing:["paneer 200g","butter 1.5 tbsp","tomato puree","cream 3 tbsp","spices","fenugreek leaves","roti 2"],
+      ytQ:"paneer butter masala dinner restaurant style recipe", tags:["p","h"] },
+    { name:"Egg Keema Matar with Roti",                  protein:24, cal:412, isEgg:true,
+      ing:["4 eggs (crumbled fine)","green peas 80g","onion","tomato","ginger garlic paste","spices","whole wheat roti 2"],
+      ytQ:"egg keema matar recipe protein Indian dinner", tags:["p"] },
+  ]
+};
+
+/* ── Meal type config ── */
+const META = {
+  breakfast:    { label:"Breakfast",      time:"7:00 AM",  snack:false },
+  midMorning:   { label:"Mid-Morning",    time:"10:30 AM", snack:true  },
+  lunch:        { label:"Lunch",          time:"1:00 PM",  snack:false },
+  eveningSnack: { label:"Evening Snack",  time:"5:30 PM",  snack:true  },
+  dinner:       { label:"Dinner",         time:"8:00 PM",  snack:false },
+};
+const ORDER = ["breakfast","midMorning","lunch","eveningSnack","dinner"];
+
+const TYPE_CAT = { breakfast:'b', midMorning:'ms', lunch:'l', eveningSnack:'es', dinner:'d' };
+const CUST_KEY = "eggetarian_custom_v1";
+
+/* ── State ── */
+let plan      = null;
+let weekPlans = null;
+let mode      = "plan";
+let bFilter   = "all";
+let isEgg     = false;
+let customArr = [];
+
+document.getElementById("mealDate").valueAsDate = new Date();
+
+/* ── Custom recipe persistence ── */
+function loadCustom() {
+  try { customArr = JSON.parse(localStorage.getItem(CUST_KEY) || "[]"); }
+  catch { customArr = []; }
+  customArr.forEach(r => injectCustom(r));
+}
+
+function injectCustom(r) {
+  const entry = {
+    name: r.name,
+    protein: r.protein,
+    cal: r.cal,
+    isEgg: r.isEgg,
+    ing: r.ing,
+    ytQ: r.name + " Indian recipe healthy",
+    ytUrl: r.ytUrl || null,
+    tags: r.protein >= 20 ? ["p"] : [],
+    cat: TYPE_CAT[r.mealType] || "l",
+    isCustom: true,
+    id: r.id,
+    mealType: r.mealType,
+  };
+  // Remove old version if re-injecting
+  if (DB[r.mealType]) {
+    DB[r.mealType] = DB[r.mealType].filter(x => x.id !== r.id);
+    DB[r.mealType].push(entry);
+  }
+}
+
+function recipeUrl(meal) {
+  if (meal.isCustom && meal.ytUrl) return meal.ytUrl;
+  return "https://www.youtube.com/results?search_query=" + encodeURIComponent(meal.ytQ);
+}
+
+/* ── Utils ── */
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function buildPlan(dateStr) {
+  return {
+    date: dateStr,
+    breakfast:    pick(DB.breakfast),
+    midMorning:   pick(DB.midMorning),
+    lunch:        pick(DB.lunch),
+    eveningSnack: pick(DB.eveningSnack),
+    dinner:       pick(DB.dinner),
+  };
+}
+
+function sumProt(p) { return ORDER.reduce((s,k) => s + p[k].protein, 0); }
+function sumCal(p)  { return ORDER.reduce((s,k) => s + p[k].cal, 0); }
+
+function fmtDate(ds)  { return new Date(ds+"T00:00:00").toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long",year:"numeric"}); }
+function fmtShort(ds) { return new Date(ds+"T00:00:00").toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short"}); }
+function fmtDayN(ds)  { return new Date(ds+"T00:00:00").toLocaleDateString("en-IN",{weekday:"short"}); }
+function fmtDayD(ds)  { return new Date(ds+"T00:00:00").toLocaleDateString("en-IN",{day:"numeric",month:"short"}); }
+
+/* ── Tab switching ── */
+function switchTab(t) {
+  ["plan","browse"].forEach(id => document.getElementById("tab-"+id).classList.toggle("on", id===t));
+  document.getElementById("plan-ctrl").style.display   = t==="plan"   ? "flex"  : "none";
+  document.getElementById("browse-ctrl").style.display = t==="browse" ? "block" : "none";
+  if (t==="browse") {
+    document.getElementById("btmBar").style.display = "none";
+    renderBrowser();
+    document.getElementById("planOut").innerHTML = "";
+  } else if (plan && mode==="plan") {
+    document.getElementById("btmBar").style.display = "block";
+  }
+}
+
+/* ── Render meal block ── */
+const WA_SVG = `<svg class="wa-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>`;
+const YT_SVG  = `<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>`;
+
+function renderMealBlock(meal, type, delay) {
+  const meta = META[type];
+  const dot  = meal.isEgg ? "egg" : "veg";
+  const kind = meal.isEgg ? "Egg-Based" : "Veg";
+  return `
+<div class="meal-block${meta.snack?" snack":""} ai d${delay}" id="mb-${type}">
+  <div class="meal-lbl-row">
+    <div class="m-dot ${dot}"></div>
+    <span class="m-type">${meta.label}</span>
+    <span class="m-time">${meta.time} · ${kind}</span>
+  </div>
+  <div class="m-entry">
+    <div class="m-name${meta.snack?" compact":""}">${meal.name}</div>
+    <div class="m-prot"><span class="p-num">${meal.protein}g</span><span class="p-lbl">protein</span></div>
+    <div class="m-kcal">${meal.cal} kcal</div>
+    <div class="m-ing">${meal.ing.join(" · ")}</div>
+    <div class="m-acts">
+      <a class="btn-yt" href="${recipeUrl(meal)}" target="_blank" rel="noopener">${YT_SVG} Watch Recipe</a>
+      <button class="btn-chg" onclick="swapMeal('${type}')">↻ Change</button>
+      <button class="btn-sh-meal" onclick="shareMealWA('${type}')" title="Share to WhatsApp">${WA_SVG}</button>
+    </div>
+  </div>
+</div>`;
+}
+
+/* ── Render day plan ── */
+function renderPlan(p) {
+  plan = p; mode = "plan";
+  const prot = sumProt(p), kcal = sumCal(p);
+  let html = `<div class="day-bar ai">
+    <div class="day-bar-date">${fmtDate(p.date)}</div>
+    <div class="day-bar-nums"><div class="day-prot" id="dayProt">${prot}g</div>protein · <span id="dayKcal">${kcal}</span> kcal</div>
+  </div>`;
+  ORDER.forEach((type, i) => { html += renderMealBlock(p[type], type, i+1); });
+  document.getElementById("planOut").innerHTML = html;
+  document.getElementById("btmBar").style.display = "block";
+}
+
+/* ── Swap one meal ── */
+function swapMeal(type) {
+  if (!plan) return;
+  const el = document.getElementById("mb-"+type);
+  if (el) { el.style.opacity=".35"; el.style.transition="opacity .14s"; }
+  setTimeout(() => {
+    const arr = DB[type];
+    let next;
+    do { next = pick(arr); } while (arr.length > 1 && next.name === plan[type].name);
+    plan[type] = next;
+    const tmp = document.createElement("div");
+    tmp.innerHTML = renderMealBlock(next, type, 1);
+    if (el) el.replaceWith(tmp.firstElementChild);
+    const prot = sumProt(plan), kcal = sumCal(plan);
+    const dp = document.getElementById("dayProt"); if (dp) dp.textContent = prot+"g";
+    const dk = document.getElementById("dayKcal"); if (dk) dk.textContent = kcal;
+  }, 150);
+}
+
+/* ── WhatsApp sharing (with ingredients) ── */
+function waOpen(text) { window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank","noopener"); }
+
+function shareMealWA(type) {
+  if (!plan) return;
+  const m = plan[type], meta = META[type];
+  waOpen(
+    `*${meta.label}* – ${fmtShort(plan.date)}\n` +
+    `${m.name}\n` +
+    `*${m.protein}g protein* · ${m.cal} kcal\n\n` +
+    `*Ingredients:*\n${m.ing.map(i=>"• "+i).join("\n")}\n\n` +
+    `*Recipe:* ${recipeUrl(m)}`
+  );
+}
+
+function shareDayWA() {
+  if (!plan) return;
+  let txt =
+    `*Protein-Rich Eggetarian Meal Plan*\n` +
+    `${fmtDate(plan.date)}\n` +
+    `Total: *${sumProt(plan)}g protein* · ${sumCal(plan)} kcal\n\n`;
+  ORDER.forEach(type => {
+    const m = plan[type];
+    txt +=
+      `*${META[type].label}* (${m.protein}g protein)\n` +
+      `${m.name}\n` +
+      `Ingredients: ${m.ing.join(", ")}\n` +
+      `Recipe: ${recipeUrl(m)}\n\n`;
+  });
+  waOpen(txt.trimEnd());
+}
+
+function shareWeekWA() {
+  if (!weekPlans) return;
+  let txt =
+    `*7-Day Eggetarian Meal Plan*\n` +
+    `${fmtShort(weekPlans[0].date)} – ${fmtShort(weekPlans[6].date)}\n\n`;
+  weekPlans.forEach(p => {
+    txt +=
+      `*${fmtDayN(p.date)} ${fmtDayD(p.date)}* (~${sumProt(p)}g protein)\n` +
+      `B: ${p.breakfast.name}\nL: ${p.lunch.name}\nD: ${p.dinner.name}\n\n`;
+  });
+  txt += "Tap a day for full details + ingredients + recipe links!";
+  waOpen(txt);
+}
+
+/* ── Weekly view ── */
+function renderWeekly(plans) {
+  weekPlans = plans; plan = null; mode = "weekly";
+  let html =
+    `<div class="wk-hd ai"><div class="wk-kicker">Weekly Plan</div>` +
+    `<div class="wk-range">${fmtShort(plans[0].date)} – ${fmtShort(plans[6].date)}</div></div>`;
+  plans.forEach((p, i) => {
+    const prot = sumProt(p);
+    html +=
+      `<div class="wk-row ai d${Math.min(i+1,5)}" onclick="drillDay(${i})">` +
+      `<div class="wk-day"><div class="wk-dname">${fmtDayN(p.date)}</div><div class="wk-ddate">${fmtDayD(p.date)}</div></div>` +
+      `<div class="wk-meals"><div class="wk-meal-l">${p.breakfast.name}</div><div class="wk-meal-l">${p.lunch.name}</div><div class="wk-meal-l">${p.dinner.name}</div></div>` +
+      `<div class="wk-prot"><span class="wk-pval">${prot}g</span><span class="wk-punit">protein</span></div>` +
+      `<div class="wk-arr">›</div></div>`;
+  });
+  html += `<div class="wk-wa"><button class="btn-sh-wk" onclick="shareWeekWA()">${WA_SVG} Share Weekly Plan to WhatsApp</button></div>`;
+  document.getElementById("planOut").innerHTML = html;
+  document.getElementById("btmBar").style.display = "none";
+}
+
+function drillDay(i) {
+  if (!weekPlans) return;
+  document.getElementById("mealDate").value = weekPlans[i].date;
+  renderPlan(weekPlans[i]);
+}
+
+/* ── Recipe browser ── */
+function getAllRecipes() {
+  const seen = new Set();
+  const out = [];
+  // Custom first
+  customArr.forEach(r => {
+    const entry = DB[r.mealType]?.find(x => x.id === r.id);
+    if (entry && !seen.has(entry.name)) { seen.add(entry.name); out.push(entry); }
+  });
+  // Built-in
+  Object.entries(DB).forEach(([mealType, arr]) => {
+    arr.forEach(m => {
+      if (!seen.has(m.name)) { seen.add(m.name); out.push({...m, mealType}); }
+    });
+  });
+  return out;
+}
+
+function setFilter(f, btn) {
+  bFilter = f;
+  document.querySelectorAll(".br-tab").forEach(t => t.classList.remove("on"));
+  btn.classList.add("on");
+  renderBrowser();
+}
+
+function renderBrowser() {
+  const q = (document.getElementById("br-search")?.value || "").toLowerCase().trim();
+  let items = getAllRecipes();
+
+  if      (bFilter==="b")    items = items.filter(m => m.cat==="b");
+  else if (bFilter==="l")    items = items.filter(m => m.cat==="l");
+  else if (bFilter==="d")    items = items.filter(m => m.cat==="d");
+  else if (bFilter==="e")    items = items.filter(m => m.isEgg);
+  else if (bFilter==="v")    items = items.filter(m => !m.isEgg);
+  else if (bFilter==="p")    items = items.filter(m => m.protein >= 20);
+  else if (bFilter==="mine") items = items.filter(m => m.isCustom);
+
+  if (q) items = items.filter(m => m.name.toLowerCase().includes(q) || m.ing?.some(i => i.toLowerCase().includes(q)));
+
+  document.getElementById("br-cnt").textContent = `${items.length} recipe${items.length!==1?"s":""} found`;
+
+  const catLbl = {b:"Breakfast",ms:"Mid-Morning",l:"Lunch",es:"Evening Snack",d:"Dinner"};
+
+  document.getElementById("br-grid").innerHTML = items.map(m => {
+    const tags = [];
+    if (m.isEgg) tags.push(`<span class="br-tag tag-e">egg</span>`);
+    else          tags.push(`<span class="br-tag tag-v">veg</span>`);
+    if (m.protein>=20) tags.push(`<span class="br-tag tag-p">high protein</span>`);
+    if (m.tags?.includes("q")) tags.push(`<span class="br-tag tag-q">quick</span>`);
+    if (m.isCustom) tags.push(`<span class="br-tag tag-mine">yours</span>`);
+    if (bFilter==="all") tags.push(`<span class="br-tag" style="background:var(--bg);color:var(--t3)">${catLbl[m.cat]||""}</span>`);
+
+    const delBtn = m.isCustom
+      ? `<button class="br-del" onclick="delCustom(${m.id},event)" title="Delete">✕</button>`
+      : "";
+
+    return `
+<div class="br-card${m.isCustom?" custom-card":""}">
+  ${delBtn}
+  <div class="br-name">${m.name}</div>
+  <div class="br-prot">${m.protein}g protein · ${m.cal} kcal</div>
+  <div class="br-tags">${tags.join("")}</div>
+  <a class="br-yt" href="${recipeUrl(m)}" target="_blank" rel="noopener">
+    ${YT_SVG} Watch
+  </a>
+</div>`;
+  }).join("");
+}
+
+function delCustom(id, ev) {
+  ev.stopPropagation();
+  if (!confirm("Remove this recipe?")) return;
+  customArr = customArr.filter(r => r.id !== id);
+  localStorage.setItem(CUST_KEY, JSON.stringify(customArr));
+  Object.keys(DB).forEach(k => { DB[k] = DB[k].filter(r => r.id !== id); });
+  renderBrowser();
+  showToast("Recipe removed");
+}
+
+/* ── Add recipe panel ── */
+function openPanel() {
+  document.getElementById("addPanel").classList.add("open");
+  document.getElementById("overlay").classList.add("open");
+  document.body.style.overflow = "hidden";
+  document.getElementById("f-name").focus();
+}
+
+function closePanel() {
+  document.getElementById("addPanel").classList.remove("open");
+  document.getElementById("overlay").classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+function setEggType(v) {
+  isEgg = v;
+  document.getElementById("type-veg").className = "type-btn" + (!v ? " sel-veg" : "");
+  document.getElementById("type-egg").className = "type-btn" + ( v ? " sel-egg" : "");
+}
+
+function openYTSearch() {
+  const name = document.getElementById("f-name").value.trim() || "Indian healthy recipe";
+  window.open("https://www.youtube.com/results?search_query=" + encodeURIComponent(name + " Indian recipe healthy"), "_blank", "noopener");
+}
+
+function saveRecipe() {
+  const name   = document.getElementById("f-name").value.trim();
+  const prot   = parseInt(document.getElementById("f-prot").value, 10);
+  const cal    = parseInt(document.getElementById("f-cal").value,  10);
+  const type   = document.getElementById("f-type").value;
+  const ytUrl  = document.getElementById("f-yturl").value.trim();
+  const ingRaw = document.getElementById("f-ing").value;
+  const ing    = ingRaw.split(",").map(s => s.trim()).filter(Boolean);
+
+  if (!name)          { showToast("Please enter a recipe name"); return; }
+  if (isNaN(prot)||prot<0) { showToast("Please enter valid protein content"); return; }
+  if (isNaN(cal)||cal<0)   { showToast("Please enter valid calorie count"); return; }
+
+  const r = {
+    id: Date.now(),
+    name, protein: prot, cal,
+    isEgg, mealType: type,
+    ing: ing.length ? ing : [name],
+    ytUrl: ytUrl || null,
+    tags: prot >= 20 ? ["p"] : [],
+  };
+
+  customArr.push(r);
+  localStorage.setItem(CUST_KEY, JSON.stringify(customArr));
+  injectCustom(r);
+
+  // Reset form
+  document.getElementById("f-name").value  = "";
+  document.getElementById("f-prot").value  = "";
+  document.getElementById("f-cal").value   = "";
+  document.getElementById("f-yturl").value = "";
+  document.getElementById("f-ing").value   = "";
+  setEggType(false);
+
+  closePanel();
+  showToast(`"${name}" added to your recipes`);
+
+  // Refresh browser if visible
+  if (document.getElementById("tab-browse").classList.contains("on")) renderBrowser();
+}
+
+/* ── Toast ── */
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 2800);
+}
+
+/* ── Triggers ── */
+function showLoading(msg) {
+  document.getElementById("planOut").innerHTML =
+    `<div class="loading"><div class="ld-dots"><div class="ld-dot"></div><div class="ld-dot"></div><div class="ld-dot"></div></div><div class="ld-lbl">${msg}</div></div>`;
+  document.getElementById("btmBar").style.display = "none";
+}
+
+function triggerDay() {
+  const ds = document.getElementById("mealDate").value;
+  if (!ds) { showToast("Please pick a date"); return; }
+  showLoading("Building your meal plan…");
+  setTimeout(() => renderPlan(buildPlan(ds)), 520);
+}
+
+function triggerWeekly() {
+  const ds = document.getElementById("mealDate").value;
+  const start = ds ? new Date(ds+"T00:00:00") : new Date();
+  showLoading("Building your 7-day plan…");
+  setTimeout(() => {
+    const plans = Array.from({length:7}, (_,i) => {
+      const d = new Date(start); d.setDate(d.getDate()+i);
+      return buildPlan(d.toISOString().split("T")[0]);
+    });
+    renderWeekly(plans);
+  }, 560);
+}
+
+/* ── Init ── */
+loadCustom();
+</script>
+</body>
+</html>
